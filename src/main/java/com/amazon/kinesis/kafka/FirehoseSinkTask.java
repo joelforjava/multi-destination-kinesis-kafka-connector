@@ -42,9 +42,7 @@ public class FirehoseSinkTask extends SinkTask {
 	
 	private int batchSizeInBytes;
 
-	static final Map<String, List<String>> LOOKUP = StreamMappings.CLUSTER_1;
-	// static final Map<String, List<String>> LOOKUP = StreamMappings.CLUSTER_2;
-	// static final Map<String, List<String>> LOOKUP = StreamMappings.CLUSTER_3;
+	private static Map<String, List<String>> lookup;
 
 	@Override
 	public String version() {
@@ -58,28 +56,44 @@ public class FirehoseSinkTask extends SinkTask {
 	@Override
 	public void put(Collection<SinkRecord> sinkRecords) {
 
-		if (batch)
-			putRecordsInBatch(sinkRecords);
-		else
-			putRecords(sinkRecords);
+		if (batch) {
+            putRecordsInBatch(sinkRecords);
+        } else {
+            putRecords(sinkRecords);
+        }
 
 	}
 
 	@Override
 	public void start(Map<String, String> props) {
+        start(props, null);
+    }
+
+    protected void start(Map<String, String> props, AmazonKinesisFirehoseClient client) {
+
+	    String clusterName = props.get(FirehoseSinkConnector.CLUSTER_NAME);
+	    if (clusterName != null) {
+            lookup = StreamMappings.lookup(clusterName);
+        } else {
+	        throw new ConfigException("Connector cannot start without required property value for 'clusterName'.");
+        }
 
 		batch = Boolean.parseBoolean(props.get(FirehoseSinkConnector.BATCH));
 		
 		batchSize = Integer.parseInt(props.get(FirehoseSinkConnector.BATCH_SIZE));
 		
 		batchSizeInBytes = Integer.parseInt(props.get(FirehoseSinkConnector.BATCH_SIZE_IN_BYTES));
-		
-		firehoseClient = new AmazonKinesisFirehoseClient(new DefaultAWSCredentialsProviderChain());
-		firehoseClient.setRegion(RegionUtils.getRegion(props.get(FirehoseSinkConnector.REGION)));
+
+		if (client != null) {
+		    this.firehoseClient = client;
+        } else {
+            firehoseClient = new AmazonKinesisFirehoseClient(new DefaultAWSCredentialsProviderChain());
+            firehoseClient.setRegion(RegionUtils.getRegion(props.get(FirehoseSinkConnector.REGION)));
+        }
 
         log.info("[VALIDATING] all configured delivery streams");
 
-		LOOKUP.forEach((key, value) -> value.forEach(this::validateDeliveryStream));
+//		lookup.forEach((topic, streams) -> streams.forEach(this::validateDeliveryStream));
 
         log.info("[SUCCESS] all configured delivery streams are validated");
 	}
@@ -101,10 +115,10 @@ public class FirehoseSinkTask extends SinkTask {
 		DescribeDeliveryStreamResult describeDeliveryStreamResult = firehoseClient
 				.describeDeliveryStream(describeDeliveryStreamRequest);
 
-		if (!describeDeliveryStreamResult.getDeliveryStreamDescription().getDeliveryStreamStatus().equals("ACTIVE"))
-			throw new ConfigException("Connector cannot start as configured delivery stream is not active"
-					+ describeDeliveryStreamResult.getDeliveryStreamDescription().getDeliveryStreamStatus());
-
+		if (!describeDeliveryStreamResult.getDeliveryStreamDescription().getDeliveryStreamStatus().equals("ACTIVE")) {
+            throw new ConfigException("Connector cannot start as configured delivery stream is not active"
+                    + describeDeliveryStreamResult.getDeliveryStreamDescription().getDeliveryStreamStatus());
+        }
 	}
 
     /**
@@ -149,7 +163,7 @@ public class FirehoseSinkTask extends SinkTask {
 
 		for (SinkRecord sinkRecord : sinkRecords) {
 		    String topic = sinkRecord.topic();
-		    List<String> streams = LOOKUP.get(topic);
+		    List<String> streams = lookup.get(topic);
 		    if (streams == null || streams.size() == 0) {
 		        String error = "No streams found for topic: " + topic;
 		        log.error(error);

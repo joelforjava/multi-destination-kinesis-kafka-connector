@@ -9,8 +9,12 @@ import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.sink.SinkConnector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FirehoseSinkConnector extends SinkConnector {
+
+    private static Logger log = LoggerFactory.getLogger(FirehoseSinkConnector.class);
 
 	public static final String DELIVERY_STREAM = "deliveryStream";
 	
@@ -21,6 +25,8 @@ public class FirehoseSinkConnector extends SinkConnector {
 	public static final String BATCH_SIZE = "batchSize";
 	
 	public static final String BATCH_SIZE_IN_BYTES = "batchSizeInBytes";
+
+	public static final String CLUSTER_NAME = "clusterName";
 	
 	private String deliveryStream;
 	
@@ -30,7 +36,9 @@ public class FirehoseSinkConnector extends SinkConnector {
 	
 	private String batchSize;
 	
-	private String batchSizeInBytes; 
+	private String batchSizeInBytes;
+
+	private String clusterName;
 	
 	private final String MAX_BATCH_SIZE = "500";
 	
@@ -38,12 +46,14 @@ public class FirehoseSinkConnector extends SinkConnector {
 
 	@Override
 	public void start(Map<String, String> props) {
+	    log.debug("Config map: " + props);
 		
 		deliveryStream = props.get(DELIVERY_STREAM);
 		region = props.get(REGION);
 		batch = props.get(BATCH);	
 		batchSize = props.get(BATCH_SIZE);
 		batchSizeInBytes = props.get(BATCH_SIZE_IN_BYTES);
+		clusterName = props.get(CLUSTER_NAME);
 	}
 
 	@Override
@@ -65,22 +75,30 @@ public class FirehoseSinkConnector extends SinkConnector {
 			if (deliveryStream != null)
 				config.put(DELIVERY_STREAM, deliveryStream);
 			
-			if(region != null)
-				config.put(REGION, region);
+			if(region != null) {
+                config.put(REGION, region);
+            }
 			
-			if(batch != null)
-				config.put(BATCH, batch);
+			if(batch != null) {
+                config.put(BATCH, batch);
+            }
 			
-			if(batchSize != null)
-				config.put(BATCH_SIZE, batchSize);
-			else
-				config.put(BATCH_SIZE, MAX_BATCH_SIZE);
+			if(batchSize != null) {
+                config.put(BATCH_SIZE, batchSize);
+            } else {
+                config.put(BATCH_SIZE, MAX_BATCH_SIZE);
+            }
 			
-			if(batchSizeInBytes != null)
-				config.put(BATCH_SIZE_IN_BYTES,  batchSizeInBytes);
-			else 
-				config.put(BATCH_SIZE_IN_BYTES, MAX_BATCH_SIZE_IN_BYTES);
-			
+			if(batchSizeInBytes != null) {
+                config.put(BATCH_SIZE_IN_BYTES,  batchSizeInBytes);
+            } else {
+                config.put(BATCH_SIZE_IN_BYTES, MAX_BATCH_SIZE_IN_BYTES);
+            }
+
+            if (clusterName != null) {
+                config.put(CLUSTER_NAME, clusterName);
+            }
+
 			configs.add(config);
 		}
 		return configs;
