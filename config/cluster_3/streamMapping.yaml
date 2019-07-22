@@ -1,4 +1,4 @@
-clusterName: CLUSTER_1
+clusterName: CLUSTER_3
 streams:
     - name: FUTURES.TOPIC
       destinations:
