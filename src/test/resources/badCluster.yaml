@@ -1,0 +1,10 @@
+clusterName: CLUSTER_1
+streamer:
+  - name: FUTURES.TOPIC
+    destinations:
+      - FUTURES-STREAM
+  - name: GOLD.TOPIC
+    destinations:
+      - GOLD-STREAM
+      - S3-GOLD-STREAM
+      - COMMODITIES-STREAM

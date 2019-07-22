@@ -1,11 +1,9 @@
 package com.amazon.kinesis.kafka;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import com.amazon.kinesis.kafka.config.ClusterMapping;
+import com.amazon.kinesis.kafka.config.ConfigParser;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigException;
@@ -71,11 +69,26 @@ public class FirehoseSinkTask extends SinkTask {
 
     protected void start(Map<String, String> props, AmazonKinesisFirehoseClient client) {
 
-	    String clusterName = props.get(FirehoseSinkConnector.CLUSTER_NAME);
-	    if (clusterName != null) {
+		String mappingFileUrl = props.get(FirehoseSinkConnector.MAPPING_FILE);
+        String clusterName = props.get(FirehoseSinkConnector.CLUSTER_NAME);
+		if (mappingFileUrl != null) {
+		    log.info("Property for {} found. Attempting to load this configuration file.", FirehoseSinkConnector.MAPPING_FILE);
+            Optional<ClusterMapping> optionalMapping = ConfigParser.parse(mappingFileUrl);
+            if (optionalMapping.isPresent()) {
+                ClusterMapping clusterMapping = optionalMapping.get();
+                String cName = clusterMapping.getClusterName();
+                log.info("Using cluster name: {}", cName);
+                lookup = clusterMapping.getStreamsAsMap();
+            } else {
+                log.error("Parser could not correctly parse the mapping file at {}. Please verify the configuration.", mappingFileUrl);
+                throw new ConfigException("Parser could not correctly parse the mapping file");
+            }
+        } else if (clusterName != null) {
+		    log.warn("Using cluster name: {}", clusterName);
+		    log.warn("Attempting to use hard-coded mappings. Please provide a YAML mapping file in the future");
             lookup = StreamMappings.lookup(clusterName);
         } else {
-	        throw new ConfigException("Connector cannot start without required property value for 'clusterName'.");
+	        throw new ConfigException("Connector cannot start without required property value for either 'mappingFile' or 'clusterName'.");
         }
 
 		batch = Boolean.parseBoolean(props.get(FirehoseSinkConnector.BATCH));
@@ -93,7 +106,7 @@ public class FirehoseSinkTask extends SinkTask {
 
         log.info("[VALIDATING] all configured delivery streams");
 
-//		lookup.forEach((topic, streams) -> streams.forEach(this::validateDeliveryStream));
+		lookup.forEach((topic, streams) -> streams.forEach(this::validateDeliveryStream));
 
         log.info("[SUCCESS] all configured delivery streams are validated");
 	}

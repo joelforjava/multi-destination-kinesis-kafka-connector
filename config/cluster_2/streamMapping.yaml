@@ -1,0 +1,16 @@
+clusterName: CLUSTER_2
+streams:
+    - name: TEMPERATURES.TOPIC
+      destinations:
+      - TEMPERATURES-STREAM
+      - S3-TEMPERATURES-STREAM
+      - WEATHER-STREAM
+    - name: BIOMETRICS.TOPIC
+      destinations:
+      - BIOMETRICS-STREAM
+      - S3-BIOMETRICS-STREAM
+    - name: HURRICANES.TOPIC
+      destinations:
+      - HURRICANES-STREAM
+      - S3-HURRICANES-STREAM
+      - WEATHER-STREAM

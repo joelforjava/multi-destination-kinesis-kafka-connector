@@ -69,7 +69,11 @@ public class MockFirehoseClient extends AmazonKinesisFirehoseClient {
 
     @Override
     public DescribeDeliveryStreamResult describeDeliveryStream(DescribeDeliveryStreamRequest describeDeliveryStreamRequest) {
-        throw new UnsupportedOperationException();
+        DescribeDeliveryStreamResult deliveryStreamResult = new DescribeDeliveryStreamResult();
+        DeliveryStreamDescription streamDescription = new DeliveryStreamDescription();
+        streamDescription.setDeliveryStreamStatus("ACTIVE");
+        deliveryStreamResult.setDeliveryStreamDescription(streamDescription);
+        return deliveryStreamResult;
     }
 
     @Override

@@ -1,0 +1,19 @@
+clusterName: CLUSTER_1
+streams:
+    - name: FUTURES.TOPIC
+      destinations:
+      - FUTURES-STREAM
+    - name: GOLD.TOPIC
+      destinations:
+      - GOLD-STREAM
+      - S3-GOLD-STREAM
+      - COMMODITIES-STREAM
+    - name: BITCOIN.TOPIC
+      destinations:
+      - BITCOIN-STREAM
+      - S3-BITCOIN-STREAM
+      - COMMODITIES-STREAM
+    - name: ETHEREUM.TOPIC
+      destinations:
+      - ETHEREUM-STREAM
+      - COMMODITIES-STREAM

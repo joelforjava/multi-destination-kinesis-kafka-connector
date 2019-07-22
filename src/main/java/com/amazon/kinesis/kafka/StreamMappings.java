@@ -2,6 +2,7 @@ package com.amazon.kinesis.kafka;
 
 import java.util.*;
 
+@Deprecated
 public class StreamMappings {
 
     private static final Map<String, List<String>> CLUSTER_1;
@@ -31,7 +32,7 @@ public class StreamMappings {
         CLUSTER_3.put("ETHEREUM.TOPIC", Arrays.asList("ETHEREUM-STREAM", "COMMODITIES-STREAM"));
     }
 
-    static Map<String, List<String>> lookup(String clusterName) {
+    public static Map<String, List<String>> lookup(String clusterName) {
         switch (clusterName.toUpperCase()) {
             case "CLUSTER_1":
                 return CLUSTER_1;
