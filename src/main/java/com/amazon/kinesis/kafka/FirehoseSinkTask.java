@@ -70,7 +70,6 @@ public class FirehoseSinkTask extends SinkTask {
     protected void start(Map<String, String> props, AmazonKinesisFirehoseClient client) {
 
 		String mappingFileUrl = props.get(FirehoseSinkConnector.MAPPING_FILE);
-        String clusterName = props.get(FirehoseSinkConnector.CLUSTER_NAME);
 		if (mappingFileUrl != null) {
 		    log.info("Property for {} found. Attempting to load this configuration file.", FirehoseSinkConnector.MAPPING_FILE);
             Optional<ClusterMapping> optionalMapping = ConfigParser.parse(mappingFileUrl);
@@ -83,12 +82,8 @@ public class FirehoseSinkTask extends SinkTask {
                 log.error("Parser could not correctly parse the mapping file at {}. Please verify the configuration.", mappingFileUrl);
                 throw new ConfigException("Parser could not correctly parse the mapping file");
             }
-        } else if (clusterName != null) {
-		    log.warn("Using cluster name: {}", clusterName);
-		    log.warn("Attempting to use hard-coded mappings. Please provide a YAML mapping file in the future");
-            lookup = StreamMappings.lookup(clusterName);
         } else {
-	        throw new ConfigException("Connector cannot start without required property value for either 'mappingFile' or 'clusterName'.");
+	        throw new ConfigException("Connector cannot start without required property value for either 'mappingFile'.");
         }
 
 		batch = Boolean.parseBoolean(props.get(FirehoseSinkConnector.BATCH));

@@ -26,8 +26,6 @@ public class FirehoseSinkConnector extends SinkConnector {
 	
 	public static final String BATCH_SIZE_IN_BYTES = "batchSizeInBytes";
 
-	public static final String CLUSTER_NAME = "clusterName";
-
 	public static final String MAPPING_FILE = "mappingFile";
 	
 	private String deliveryStream;
@@ -39,8 +37,6 @@ public class FirehoseSinkConnector extends SinkConnector {
 	private String batchSize;
 	
 	private String batchSizeInBytes;
-
-	private String clusterName;
 
 	private String mappingFile;
 	
@@ -57,7 +53,6 @@ public class FirehoseSinkConnector extends SinkConnector {
 		batch = props.get(BATCH);	
 		batchSize = props.get(BATCH_SIZE);
 		batchSizeInBytes = props.get(BATCH_SIZE_IN_BYTES);
-		clusterName = props.get(CLUSTER_NAME);
 		mappingFile = props.get(MAPPING_FILE);
 	}
 
@@ -98,10 +93,6 @@ public class FirehoseSinkConnector extends SinkConnector {
                 config.put(BATCH_SIZE_IN_BYTES,  batchSizeInBytes);
             } else {
                 config.put(BATCH_SIZE_IN_BYTES, MAX_BATCH_SIZE_IN_BYTES);
-            }
-
-            if (clusterName != null) {
-                config.put(CLUSTER_NAME, clusterName);
             }
 
             if (mappingFile != null) {
