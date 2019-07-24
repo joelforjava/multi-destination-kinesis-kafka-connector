@@ -5,6 +5,7 @@ import java.util.*;
 import com.amazon.kinesis.kafka.config.ClusterMapping;
 import com.amazon.kinesis.kafka.config.ConfigParser;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.Cluster;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -99,6 +100,12 @@ public class FirehoseSinkTask extends SinkTask {
             firehoseClient.setRegion(RegionUtils.getRegion(props.get(FirehoseSinkConnector.REGION)));
         }
 
+		log.info("[VALIDATING] all topics have an accompanying stream mappings entry");
+
+		validateTopicToStreamsMappings(props);
+
+		log.info("[SUCCESS] all topics are listed in the stream mappings configuration");
+
         log.info("[VALIDATING] all configured delivery streams");
 
 		lookup.forEach((topic, streams) -> streams.forEach(this::validateDeliveryStream));
@@ -109,6 +116,22 @@ public class FirehoseSinkTask extends SinkTask {
 	@Override
 	public void stop() {
 
+	}
+
+	/**
+	 * Validates that the topics saved in the properties have mappings in the streamMappings configuration
+	 */
+	private void validateTopicToStreamsMappings(Map<String, String> props) {
+		String topicsConfig = props.getOrDefault(FirehoseSinkConnector.TOPICS_CONFIG, "");
+		String[] topics = topicsConfig.split(",");
+		Arrays.sort(topics);
+
+		String[] lookupTopicsArray = lookup.keySet().toArray(new String[0]);
+		Arrays.sort(lookupTopicsArray);
+
+		if (!Arrays.equals(topics,lookupTopicsArray)) {
+			throw new ConfigException("Connector cannot start as configured stream mappings is incomplete");
+		}
 	}
 
 

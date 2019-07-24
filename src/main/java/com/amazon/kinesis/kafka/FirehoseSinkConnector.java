@@ -74,7 +74,7 @@ public class FirehoseSinkConnector extends SinkConnector {
 			Map<String, String> config = new HashMap<>();
 			if (deliveryStream != null)
 				config.put(DELIVERY_STREAM, deliveryStream);
-			
+
 			if(region != null) {
                 config.put(REGION, region);
             }

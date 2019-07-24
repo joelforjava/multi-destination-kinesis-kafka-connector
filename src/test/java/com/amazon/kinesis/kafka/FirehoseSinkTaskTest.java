@@ -39,6 +39,9 @@ public class FirehoseSinkTaskTest {
         FirehoseSinkTask task = new FirehoseSinkTask();
         MockFirehoseClient mockClient = new MockFirehoseClient();
         Map<String, String> props = createCommonProps();
+        props.put(
+                FirehoseSinkConnector.TOPICS_CONFIG,
+                "IMPORTANT.TOPIC,FASCINATING.TOPIC,METRICBEAT.TOPIC,LOGSTASH.TOPIC,RABBITMQ.TOPIC");
         props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
 
         task.start(props, mockClient);
@@ -70,11 +73,60 @@ public class FirehoseSinkTaskTest {
     }
 
     @Test(expectedExceptions = ConfigException.class, expectedExceptionsMessageRegExp = "Connector cannot start.*")
-    public void testNoClusterNameInConfigurationResultsInException() {
+    public void testNoMappingFileNameInConfigurationResultsInException() {
         FirehoseSinkTask task = new FirehoseSinkTask();
         MockFirehoseClient mockClient = new MockFirehoseClient();
 
         Map<String, String> props = createCommonProps();
         task.start(props, mockClient);
+    }
+
+    @Test(expectedExceptions = ConfigException.class, expectedExceptionsMessageRegExp = "Connector cannot start.*")
+    public void testNoTopicsInConfigurationResultsInException() {
+        FirehoseSinkTask task = new FirehoseSinkTask();
+        MockFirehoseClient mockClient = new MockFirehoseClient();
+
+        Map<String, String> props = createCommonProps();
+        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
+        task.start(props, mockClient);
+    }
+
+    @Test(expectedExceptions = ConfigException.class, expectedExceptionsMessageRegExp = "Connector cannot start.*")
+    public void testMoreTopicsInPropertiesThanMappingResultsInException() {
+        FirehoseSinkTask task = new FirehoseSinkTask();
+        MockFirehoseClient mockClient = new MockFirehoseClient();
+
+        Map<String, String> props = createCommonProps();
+        props.put(
+                FirehoseSinkConnector.TOPICS_CONFIG,
+                "IMPORTANT.TOPIC,FASCINATING.TOPIC,METRICBEAT.TOPIC,LOGSTASH.TOPIC,RABBITMQ.TOPIC,ANOTHER.TOPIC");
+        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
+        task.start(props, mockClient);
+    }
+
+    @Test(expectedExceptions = ConfigException.class, expectedExceptionsMessageRegExp = "Connector cannot start.*")
+    public void testMoreTopicsInMappingsThanPropertiesResultsInException() {
+        FirehoseSinkTask task = new FirehoseSinkTask();
+        MockFirehoseClient mockClient = new MockFirehoseClient();
+
+        Map<String, String> props = createCommonProps();
+        props.put(
+                FirehoseSinkConnector.TOPICS_CONFIG,
+                "IMPORTANT.TOPIC,FASCINATING.TOPIC,METRICBEAT.TOPIC,LOGSTASH.TOPIC");
+        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
+        task.start(props, mockClient);
+
+    }
+
+    @Test(expectedExceptions = ConfigException.class, expectedExceptionsMessageRegExp = "Connector cannot start.*")
+    public void testSendingToTopicNotInPropertiesResultsInException() {
+        FirehoseSinkTask task = new FirehoseSinkTask();
+        MockFirehoseClient mockClient = new MockFirehoseClient();
+
+        Map<String, String> props = createCommonProps();
+        props.put(FirehoseSinkConnector.TOPICS_CONFIG, "IMPORTANT.TOPIC");
+        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
+        task.start(props, mockClient);
+
     }
 }
