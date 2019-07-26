@@ -73,16 +73,11 @@ public class FirehoseSinkTask extends SinkTask {
 		String mappingFileUrl = props.get(FirehoseSinkConnector.MAPPING_FILE);
 		if (mappingFileUrl != null) {
 		    log.info("Property for {} found. Attempting to load this configuration file.", FirehoseSinkConnector.MAPPING_FILE);
-            Optional<ClusterMapping> optionalMapping = ConfigParser.parse(mappingFileUrl);
-            if (optionalMapping.isPresent()) {
-                ClusterMapping clusterMapping = optionalMapping.get();
-                String cName = clusterMapping.getClusterName();
-                log.info("Using cluster name: {}", cName);
-                lookup = clusterMapping.getStreamsAsMap();
-            } else {
-                log.error("Parser could not correctly parse the mapping file at {}. Please verify the configuration.", mappingFileUrl);
-                throw new ConfigException("Parser could not correctly parse the mapping file");
-            }
+            ClusterMapping clusterMapping = ConfigParser.parse(mappingFileUrl)
+					.orElseThrow(() -> new ConfigException("Parser could not correctly parse the mapping file: " + mappingFileUrl));
+			String cName = clusterMapping.getClusterName();
+			log.info("Using cluster name: {}", cName);
+			lookup = clusterMapping.getStreamsAsMap();
         } else {
 	        throw new ConfigException("Connector cannot start without required property value for either 'mappingFile'.");
         }
@@ -100,11 +95,7 @@ public class FirehoseSinkTask extends SinkTask {
             firehoseClient.setRegion(RegionUtils.getRegion(props.get(FirehoseSinkConnector.REGION)));
         }
 
-		log.info("[VALIDATING] all topics have an accompanying stream mappings entry");
-
 		validateTopicToStreamsMappings(props);
-
-		log.info("[SUCCESS] all topics are listed in the stream mappings configuration");
 
         log.info("[VALIDATING] all configured delivery streams");
 
@@ -122,6 +113,8 @@ public class FirehoseSinkTask extends SinkTask {
 	 * Validates that the topics saved in the properties have mappings in the streamMappings configuration
 	 */
 	private void validateTopicToStreamsMappings(Map<String, String> props) {
+		log.info("[VALIDATING] all topics have an accompanying stream mappings entry");
+
 		String topicsConfig = props.getOrDefault(FirehoseSinkConnector.TOPICS_CONFIG, "");
 		String[] topics = topicsConfig.split(",");
 		Arrays.sort(topics);
@@ -132,6 +125,8 @@ public class FirehoseSinkTask extends SinkTask {
 		if (!Arrays.equals(topics,lookupTopicsArray)) {
 			throw new ConfigException("Connector cannot start as configured stream mappings is incomplete");
 		}
+
+		log.info("[SUCCESS] all topics are listed in the stream mappings configuration");
 	}
 
 

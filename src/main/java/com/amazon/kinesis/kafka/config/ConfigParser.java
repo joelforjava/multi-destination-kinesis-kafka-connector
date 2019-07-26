@@ -54,7 +54,7 @@ public class ConfigParser {
         } catch (FileNotFoundException fnfe) {
             log.error("File {} could not be found. Please ensure the file is in the correct location.", fileUrl);
         } catch (IOException ioe) {
-            log.error("There was an error trying to read file ().", fileUrl);
+            log.error("There was an error trying to read file {}.", fileUrl);
         } catch (YAMLException ye) {
             log.error("File {} is not valid YAML or it does not conform to the expected structure required.", fileUrl);
         }
