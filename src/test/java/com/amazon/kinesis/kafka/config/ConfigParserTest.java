@@ -4,6 +4,8 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class ConfigParserTest {
@@ -40,6 +42,18 @@ public class ConfigParserTest {
         Assert.assertFalse(mapping.isPresent());
     }
 
+    @Test
+    void testParserCanParseYamlWithFilterMapping() {
+        String path = "sample_cluster_2_w_filters.yaml";
+        Optional<ClusterMapping> mapping = ConfigParser.parse(path);
+        Assert.assertTrue(mapping.isPresent());
+
+        ClusterMapping clusterMapping = mapping.get();
+        Map<String, List<StreamFilterMapping>> filters = clusterMapping.gatherStreamFilters();
+        Assert.assertEquals(filters.size(), 3); // One list per configured topic
+        Assert.assertEquals(filters.get("BIOMETRICS.TOPIC").size(), 2);
+        Assert.assertEquals(filters.get("TEMPERATURES.TOPIC").size(), 0);
+    }
 
     private String loadConfigDirectory() {
         return System.getProperty("configDirectory");

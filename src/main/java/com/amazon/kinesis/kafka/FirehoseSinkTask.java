@@ -4,6 +4,7 @@ import java.util.*;
 
 import com.amazon.kinesis.kafka.config.ClusterMapping;
 import com.amazon.kinesis.kafka.config.ConfigParser;
+import com.amazon.kinesis.kafka.config.StreamFilterMapping;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.Cluster;
 import org.apache.kafka.common.TopicPartition;
@@ -43,6 +44,8 @@ public class FirehoseSinkTask extends SinkTask {
 
 	private static Map<String, List<String>> lookup;
 
+	private static Map<String, List<StreamFilterMapping>> filters;
+
 	@Override
 	public String version() {
 		return new FirehoseSinkConnector().version();
@@ -78,6 +81,7 @@ public class FirehoseSinkTask extends SinkTask {
 			String cName = clusterMapping.getClusterName();
 			log.info("Using cluster name: {}", cName);
 			lookup = clusterMapping.getStreamsAsMap();
+			filters = clusterMapping.gatherStreamFilters();
         } else {
 	        throw new ConfigException("Connector cannot start without required property value for either 'mappingFile'.");
         }
@@ -196,16 +200,42 @@ public class FirehoseSinkTask extends SinkTask {
 		        throw new ConfigException(error);
             }
 
+		    boolean isFilterable = filters.containsKey(topic) && filters.get(topic) != null;
+		    if (isFilterable) {
+		    	log.debug("Topic found in filters configuration. Determining if message should be filtered further.");
+		    	boolean found = false;
+		    	final String val = new String((byte[])sinkRecord.value());
+		    	List<StreamFilterMapping> filterMappings = filters.get(topic);
+		    	for (StreamFilterMapping filter : filterMappings) {
+		    		List<String> keywords = Optional.ofNullable(filter.getKeywords())
+												    .orElse(Collections.emptyList());
+		    		List<String> phrases = Optional.ofNullable(filter.getStartingPhrases())
+												   .orElse(Collections.emptyList());
+
+		    		if (keywords.stream().anyMatch(val::contains)
+							|| phrases.stream().anyMatch(s -> val.startsWith("{\"message\":\""+s))) {
+		    			if (filter.getDestinationStreamNames() != null) {
+							streams.addAll(filter.getDestinationStreamNames());
+							found = true;
+						}
+					}
+
+		    		if (!found) {
+		    			log.debug("No additional streams found via filter for Topic '{}' with Message: {}.", topic, val);
+					}
+				}
+			}
+
 			Record record = DataUtility.createRecord(sinkRecord);
-		    for (String s: streams) {
-		        if (recordList.containsKey(s)) {
-		            recordList.get(s).add(record);
-                } else {
-		            ArrayList<Record> al = new ArrayList<>();
-		            al.add(record);
-		            recordList.put(s, al);
-                }
-            }
+		    streams.forEach(stream -> {
+				if (recordList.containsKey(stream)) {
+					recordList.get(stream).add(record);
+				} else {
+					ArrayList<Record> al = new ArrayList<>();
+					al.add(record);
+					recordList.put(stream, al);
+				}
+			});
 
 			recordsInBatch++;
 			recordsSizeInBytes += record.getData().capacity();

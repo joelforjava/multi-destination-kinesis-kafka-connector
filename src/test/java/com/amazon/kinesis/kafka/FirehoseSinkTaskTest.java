@@ -47,7 +47,7 @@ public class FirehoseSinkTaskTest {
         task.start(props, mockClient);
 
         final String topicName = "METRICBEAT.TOPIC";
-        final String[] expectedataStreamNames = { "METRICBEAT-STREAM", "S3-METRICBEAT-STREAM"};
+        final String[] expectedataStreamNames = { "METRICBEAT-STREAM", "S3-METRICBEAT-STREAM" };
 
         Collection<SinkRecord> records = new ArrayList<>();
         Schema schema = createSchema();
@@ -70,6 +70,86 @@ public class FirehoseSinkTaskTest {
 
         Assert.assertEquals(s3DeliveryStreamNames.size(), 1);
         Assert.assertEquals(nonS3DeliveryStreamNames.size(), 1);
+    }
+
+    @Test
+    public void testFilteredMessagesWithKeywordsGoToAdditionalFirehoses() {
+        FirehoseSinkTask task = new FirehoseSinkTask();
+        MockFirehoseClient mockClient = new MockFirehoseClient();
+        Map<String, String> props = createCommonProps();
+        props.put(FirehoseSinkConnector.TOPICS_CONFIG,
+                "TEMPERATURES.TOPIC,BIOMETRICS.TOPIC,HURRICANES.TOPIC");
+        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_2_w_filters.yaml");
+
+        task.start(props, mockClient);
+
+        final String topicName = "BIOMETRICS.TOPIC";
+        final String[] expectedataStreamNames = { "BIOMETRICS-STREAM", "S3-BIOMETRICS-STREAM", "BLOODPRESSURE-STREAM" };
+
+        Collection<SinkRecord> records = new ArrayList<>();
+        Schema schema = createSchema();
+        String key = "theKey";
+        int offset = 0;
+        String message = "{\"message\":\"Hey I'm a Blood pressure message!\"}";
+        SinkRecord sinkRecord = new SinkRecord(topicName, PARTITION, Schema.BYTES_SCHEMA, key, schema, message.getBytes(), offset);
+        records.add(sinkRecord);
+        task.put(records);
+
+        List<String> deliveryStreamNames = mockClient.getDeliveryStreamNames();
+        Assert.assertTrue(deliveryStreamNames.containsAll(Arrays.asList(expectedataStreamNames)));
+    }
+
+    @Test
+    public void testFilteredMessagesWithStartingPhrasesGoToAdditionalFirehoses() {
+        FirehoseSinkTask task = new FirehoseSinkTask();
+        MockFirehoseClient mockClient = new MockFirehoseClient();
+        Map<String, String> props = createCommonProps();
+        props.put(FirehoseSinkConnector.TOPICS_CONFIG,
+                "TEMPERATURES.TOPIC,BIOMETRICS.TOPIC,HURRICANES.TOPIC");
+        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_2_w_filters.yaml");
+
+        task.start(props, mockClient);
+
+        final String topicName = "BIOMETRICS.TOPIC";
+        final String[] expectedataStreamNames = { "BIOMETRICS-STREAM", "S3-BIOMETRICS-STREAM", "HEARTRATE-STREAM" };
+
+        Collection<SinkRecord> records = new ArrayList<>();
+        Schema schema = createSchema();
+        String key = "theKey";
+        int offset = 0;
+        String message = "{\"message\":\"Heart rate message!\"}";
+        SinkRecord sinkRecord = new SinkRecord(topicName, PARTITION, Schema.BYTES_SCHEMA, key, schema, message.getBytes(), offset);
+        records.add(sinkRecord);
+        task.put(records);
+
+        List<String> deliveryStreamNames = mockClient.getDeliveryStreamNames();
+        Assert.assertTrue(deliveryStreamNames.containsAll(Arrays.asList(expectedataStreamNames)));
+    }
+
+    @Test
+    public void testMessagesWithoutFilterValuesDoNotGoToAdditionalFirehoses() {
+        FirehoseSinkTask task = new FirehoseSinkTask();
+        MockFirehoseClient mockClient = new MockFirehoseClient();
+        Map<String, String> props = createCommonProps();
+        props.put(FirehoseSinkConnector.TOPICS_CONFIG,
+                "TEMPERATURES.TOPIC,BIOMETRICS.TOPIC,HURRICANES.TOPIC");
+        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_2_w_filters.yaml");
+
+        task.start(props, mockClient);
+
+        final String topicName = "BIOMETRICS.TOPIC";
+
+        Collection<SinkRecord> records = new ArrayList<>();
+        Schema schema = createSchema();
+        String key = "theKey";
+        int offset = 0;
+        String message = "{\"message\":\"I am Heart rate message!\"}";
+        SinkRecord sinkRecord = new SinkRecord(topicName, PARTITION, Schema.BYTES_SCHEMA, key, schema, message.getBytes(), offset);
+        records.add(sinkRecord);
+        task.put(records);
+
+        List<String> deliveryStreamNames = mockClient.getDeliveryStreamNames();
+        Assert.assertFalse(deliveryStreamNames.contains("HEARTRATE-STREAM"));
     }
 
     @Test(expectedExceptions = ConfigException.class, expectedExceptionsMessageRegExp = "Connector cannot start.*")

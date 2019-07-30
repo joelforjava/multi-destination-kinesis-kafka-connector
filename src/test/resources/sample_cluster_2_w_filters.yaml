@@ -1,0 +1,29 @@
+clusterName: CLUSTER_2
+streams:
+  - name: TEMPERATURES.TOPIC
+    destinations:
+      - TEMPERATURES-STREAM
+      - S3-TEMPERATURES-STREAM
+      - WEATHER-STREAM
+  - name: BIOMETRICS.TOPIC
+    destinations:
+      - BIOMETRICS-STREAM
+      - S3-BIOMETRICS-STREAM
+    filters:
+      - sourceTopic: BIOMETRICS.TOPIC
+        destinationStreamNames:
+          - BLOODPRESSURE-STREAM
+        keywords:
+          - Blood pressure
+          - Bloodpressure
+          - blood pressure
+      - sourceTopic: BIOMETRICS.TOPIC
+        destinationStreamNames:
+          - HEARTRATE-STREAM
+        startingPhrases:
+          - Heart rate
+  - name: HURRICANES.TOPIC
+    destinations:
+      - HURRICANES-STREAM
+      - S3-HURRICANES-STREAM
+      - WEATHER-STREAM

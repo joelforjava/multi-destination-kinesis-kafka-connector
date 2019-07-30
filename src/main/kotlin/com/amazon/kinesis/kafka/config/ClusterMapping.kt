@@ -14,4 +14,16 @@ class ClusterMapping {
             streams!!.associateBy( {it.name!!}, {it.destinations} )
         }
 
+    fun gatherStreamFilters(): Map<String, List<StreamFilterMapping>?> {
+        if (streams == null) {
+            return emptyMap()
+        }
+        return streams!!.associateBy( { it.name!! }, {
+                if (it.filters == null) {
+                    emptyList()
+                } else {
+                    it.filters
+                }
+        })
+    }
 }
