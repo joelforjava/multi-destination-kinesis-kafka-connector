@@ -200,12 +200,12 @@ public class FirehoseSinkTask extends SinkTask {
 		        throw new ConfigException(error);
             }
 
-		    boolean isFilterable = filters.containsKey(topic) && filters.get(topic) != null;
+			final List<StreamFilterMapping> filterMappings = filters.get(topic);
+		    boolean isFilterable = filterMappings != null && !filterMappings.isEmpty();
 		    if (isFilterable) {
-		    	log.debug("Topic found in filters configuration. Determining if message should be filtered further.");
+		    	log.debug("Topic found in filters configuration. Determining if message should be filtered to additional streams.");
 		    	boolean found = false;
 		    	final String val = new String((byte[])sinkRecord.value());
-		    	List<StreamFilterMapping> filterMappings = filters.get(topic);
 		    	for (StreamFilterMapping filter : filterMappings) {
 		    		List<String> keywords = Optional.ofNullable(filter.getKeywords())
 												    .orElse(Collections.emptyList());
