@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.error.YAMLException;
+import org.yaml.snakeyaml.introspector.BeanAccess;
 
 import java.io.*;
 import java.net.URISyntaxException;
@@ -50,6 +51,7 @@ public class ConfigParser {
         try(FileInputStream fis = new FileInputStream(configFile);
             BufferedInputStream bis = new BufferedInputStream(fis)) {
             Yaml yaml = new Yaml();
+            yaml.setBeanAccess(BeanAccess.FIELD);
             mapping = yaml.loadAs(bis, ClusterMapping.class);
         } catch (FileNotFoundException fnfe) {
             log.error("File {} could not be found. Please ensure the file is in the correct location.", fileUrl);

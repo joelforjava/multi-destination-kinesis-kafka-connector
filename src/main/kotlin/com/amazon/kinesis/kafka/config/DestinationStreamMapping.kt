@@ -1,12 +1,9 @@
 package com.amazon.kinesis.kafka.config
 
-data class DestinationStreamMapping(var name: String? = null,
-                                    var destinations: List<String>? = null,
-                                    var filters: List<StreamFilterMapping>? = null) {
+data class DestinationStreamMapping(val name: String = "",
+                                    val destinations: List<String>? = null,
+                                    val filters: List<StreamFilterMapping> = emptyList()) {
     fun getFiltersAsMap(): Map<String, List<StreamFilterMapping>?> {
-        if (filters == null) {
-            return emptyMap()
-        }
-        return mapOf( name!! to filters)
+        return mapOf( name to filters)
     }
 }

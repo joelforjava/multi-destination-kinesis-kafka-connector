@@ -1,5 +1,6 @@
 package com.amazon.kinesis.kafka.config;
 
+import org.apache.kafka.common.config.ConfigException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -20,8 +21,23 @@ public class ClusterMappingTest {
         Map<String, List<String>> streamMap = mapping.getStreamsAsMap();
 
         streams.forEach(stream -> {
-            Assert.assertTrue(streamMap.keySet().contains(stream.getName()));
-            Assert.assertTrue(streamMap.values().contains(stream.getDestinations()));
+            Assert.assertTrue(streamMap.containsKey(stream.getName()));
+            Assert.assertTrue(streamMap.containsValue(stream.getDestinations()));
         });
+    }
+
+    @Test
+    void testGatherStreamFiltersCollectsAsExpected() {
+        String path = "sample_cluster_2_w_filters.yaml";
+
+        ClusterMapping mapping = ConfigParser.parse(path).orElseThrow(() -> new ConfigException(""));
+        Map<String, List<StreamFilterMapping>> filtersMap = mapping.gatherStreamFilters();
+        List<DestinationStreamMapping> streams =  mapping.getStreams();
+        DestinationStreamMapping destinationStreamMapping = streams.stream()
+                                                                .filter(stream -> "BIOMETRICS.TOPIC".equals(stream.getName()))
+                                                                .findFirst()
+                                                                .orElseThrow(() -> new ConfigException("Invalid Configuration"));
+        Assert.assertTrue(filtersMap.get("BIOMETRICS.TOPIC").size() > 0);
+        Assert.assertEquals(filtersMap.get("BIOMETRICS.TOPIC"), destinationStreamMapping.getFilters());
     }
 }

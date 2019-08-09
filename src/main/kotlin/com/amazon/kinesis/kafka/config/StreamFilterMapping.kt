@@ -1,6 +1,6 @@
 package com.amazon.kinesis.kafka.config
 
-data class StreamFilterMapping(var sourceTopic: String? = null,
-                               var destinationStreamNames: List<String>? = null,
-                               var keywords: List<String>? = null,
-                               var startingPhrases: List<String>? = null)
+data class StreamFilterMapping(val sourceTopic: String = "",
+                               val destinationStreamNames: List<String>? = null,
+                               val keywords: List<String>? = null,
+                               val startingPhrases: List<String>? = null)
