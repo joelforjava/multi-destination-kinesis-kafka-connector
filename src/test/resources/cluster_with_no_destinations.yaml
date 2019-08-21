@@ -1,0 +1,7 @@
+clusterName: TEST_CLUSTER_1
+streams:
+  - name: IMPORTANT.TOPIC
+  - name: FASCINATING.TOPIC
+  - name: METRICBEAT.TOPIC
+  - name: LOGSTASH.TOPIC
+  - name: RABBITMQ.TOPIC

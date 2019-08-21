@@ -101,11 +101,7 @@ public class FirehoseSinkTask extends SinkTask {
 
 		validateTopicToStreamsMappings(props);
 
-        log.info("[VALIDATING] all configured delivery streams");
-
-		lookup.forEach((topic, streams) -> streams.forEach(this::validateDeliveryStream));
-
-        log.info("[SUCCESS] all configured delivery streams are validated");
+		validateDeliveryStreams();
 	}
 
 	@Override
@@ -133,6 +129,21 @@ public class FirehoseSinkTask extends SinkTask {
 		log.info("[SUCCESS] all topics are listed in the stream mappings configuration");
 	}
 
+	/**
+	 * Validates status of all configured Amazon Kinesis Firehose Delivery Streams
+	 */
+	private void validateDeliveryStreams() {
+		log.info("[VALIDATING] all configured delivery streams");
+
+		lookup.forEach((topic, streams) -> {
+			if (streams == null || streams.isEmpty()) {
+				throw new ConfigException("Connector cannot start as configured stream mappings is incomplete");
+			}
+			streams.forEach(this::validateDeliveryStream);
+		});
+
+		log.info("[SUCCESS] all configured delivery streams are validated");
+	}
 
 	/**
 	 * Validates status of given Amazon Kinesis Firehose Delivery Stream.
@@ -192,40 +203,7 @@ public class FirehoseSinkTask extends SinkTask {
 		int recordsSizeInBytes = 0;
 
 		for (SinkRecord sinkRecord : sinkRecords) {
-		    String topic = sinkRecord.topic();
-		    List<String> streams = lookup.get(topic);
-		    if (streams == null || streams.size() == 0) {
-		        String error = "No streams found for topic: " + topic;
-		        log.error(error);
-		        throw new ConfigException(error);
-            }
-
-			final List<StreamFilterMapping> filterMappings = filters.get(topic);
-		    boolean isFilterable = filterMappings != null && !filterMappings.isEmpty();
-		    if (isFilterable) {
-		    	log.debug("Topic found in filters configuration. Determining if message should be filtered to additional streams.");
-		    	boolean found = false;
-		    	final String val = new String((byte[])sinkRecord.value());
-		    	for (StreamFilterMapping filter : filterMappings) {
-		    		List<String> keywords = Optional.ofNullable(filter.getKeywords())
-												    .orElse(Collections.emptyList());
-		    		List<String> phrases = Optional.ofNullable(filter.getStartingPhrases())
-												   .orElse(Collections.emptyList());
-
-		    		if (keywords.stream().anyMatch(val::contains)
-							|| phrases.stream().anyMatch(s -> val.startsWith("{\"message\":\""+s))) {
-		    			if (filter.getDestinationStreamNames() != null) {
-							streams.addAll(filter.getDestinationStreamNames());
-							found = true;
-						}
-					}
-
-		    		if (!found) {
-		    			log.debug("No additional streams found via filter for Topic '{}' with Message: {}.", topic, val);
-					}
-				}
-			}
-
+			List<String> streams = determineDestinationStreams(sinkRecord);
 			Record record = DataUtility.createRecord(sinkRecord);
 		    streams.forEach(stream -> {
 				if (recordList.containsKey(stream)) {
@@ -263,23 +241,63 @@ public class FirehoseSinkTask extends SinkTask {
 	 * @param sinkRecords
 	 */
 	private void putRecords(Collection<SinkRecord> sinkRecords) {
-
-	    String deliveryStreamName = "todo";
-
 		for (SinkRecord sinkRecord : sinkRecords) {
 
-			PutRecordRequest putRecordRequest = new PutRecordRequest();
-			putRecordRequest.setDeliveryStreamName(deliveryStreamName);
-			putRecordRequest.setRecord(DataUtility.createRecord(sinkRecord));
-			
-			PutRecordResult putRecordResult;
-			try {
-				firehoseClient.putRecord(putRecordRequest);
-			}catch(AmazonKinesisFirehoseException akfe){
-				 System.out.println("Amazon Kinesis Firehose Exception:" + akfe.getLocalizedMessage());
-			}catch(Exception e){
-				 System.out.println("Connector Exception" + e.getLocalizedMessage());
+			List<String> streams = determineDestinationStreams(sinkRecord);
+			streams.forEach(stream -> {
+				PutRecordRequest putRecordRequest = new PutRecordRequest();
+				putRecordRequest.setDeliveryStreamName(stream);
+				putRecordRequest.setRecord(DataUtility.createRecord(sinkRecord));
+
+				PutRecordResult putRecordResult;
+				try {
+					putRecordResult = firehoseClient.putRecord(putRecordRequest);
+				}catch(AmazonKinesisFirehoseException akfe){
+					System.out.println("Amazon Kinesis Firehose Exception:" + akfe.getLocalizedMessage());
+				}catch(Exception e){
+					System.out.println("Connector Exception" + e.getLocalizedMessage());
+				}
+			});
+		}
+	}
+
+	/**
+	 * Determines the destinationStream(s) in which to send a record.
+	 *
+	 * @param sinkRecord - the record to send to one or more destination streams
+	 * @return a list of destination streams
+	 */
+	private List<String> determineDestinationStreams(SinkRecord sinkRecord) {
+		String topic = sinkRecord.topic();
+
+		List<String> streams = lookup.get(topic);
+
+		final List<StreamFilterMapping> filterMappings = filters.get(topic);
+		boolean isFilterable = filterMappings != null && !filterMappings.isEmpty();
+		if (isFilterable) {
+			log.debug("Topic found in filters configuration. Determining if message should be filtered to additional streams.");
+			boolean found = false;
+			final String val = new String((byte[])sinkRecord.value());
+			for (StreamFilterMapping filter : filterMappings) {
+				List<String> keywords = Optional.ofNullable(filter.getKeywords())
+						.orElse(Collections.emptyList());
+				List<String> phrases = Optional.ofNullable(filter.getStartingPhrases())
+						.orElse(Collections.emptyList());
+
+				if (keywords.stream().anyMatch(val::contains)
+						|| phrases.stream().anyMatch(s -> val.startsWith("{\"message\":\""+s))) {
+					if (filter.getDestinationStreamNames() != null) {
+						streams.addAll(filter.getDestinationStreamNames());
+						found = true;
+					}
+				}
+
+				if (!found) {
+					log.debug("No additional streams found via filter for Topic '{}' with Message: {}.", topic, val);
+				}
 			}
 		}
+
+		return streams;
 	}
 }

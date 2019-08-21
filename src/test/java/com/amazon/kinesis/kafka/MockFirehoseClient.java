@@ -28,12 +28,18 @@ public class MockFirehoseClient extends AmazonKinesisFirehoseClient {
 
     private final List<String> deliveryStreamNames = new ArrayList<>();
 
+    private String mockedActiveResponse = "ACTIVE";
+
     public List<Record> getRecords() {
         return Collections.unmodifiableList(records);
     }
 
     public List<String> getDeliveryStreamNames() {
         return Collections.unmodifiableList(deliveryStreamNames);
+    }
+
+    public void setMockedActiveResponse(String activeResponse) {
+        this.mockedActiveResponse = activeResponse;
     }
 
     public MockFirehoseClient() {
@@ -71,7 +77,7 @@ public class MockFirehoseClient extends AmazonKinesisFirehoseClient {
     public DescribeDeliveryStreamResult describeDeliveryStream(DescribeDeliveryStreamRequest describeDeliveryStreamRequest) {
         DescribeDeliveryStreamResult deliveryStreamResult = new DescribeDeliveryStreamResult();
         DeliveryStreamDescription streamDescription = new DeliveryStreamDescription();
-        streamDescription.setDeliveryStreamStatus("ACTIVE");
+        streamDescription.setDeliveryStreamStatus(mockedActiveResponse);
         deliveryStreamResult.setDeliveryStreamDescription(streamDescription);
         return deliveryStreamResult;
     }
