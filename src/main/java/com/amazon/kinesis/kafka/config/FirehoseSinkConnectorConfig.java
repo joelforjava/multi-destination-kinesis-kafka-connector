@@ -23,9 +23,9 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
 
     public static final String MAPPING_FILE_CONFIG = "mappingFile";
 
-    private static final int MAX_BATCH_SIZE = 500;
+    public static final int MAX_BATCH_SIZE = 500;
 
-    private static final int MAX_BATCH_SIZE_IN_BYTES = 3670016;
+    public static final int MAX_BATCH_SIZE_IN_BYTES = 3670016;
 
     protected static ConfigDef baseConfigDef() {
         final ConfigDef configDef = new ConfigDef();

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class ConfigParserTest {
+public class MappingConfigParserTest {
 
     @Test
     public void testParseCanLoadValidClusterMappingYaml() throws Exception {
