@@ -4,9 +4,9 @@ import java.util.*;
 
 import com.amazon.kinesis.kafka.config.ClusterMapping;
 import com.amazon.kinesis.kafka.config.ConfigParser;
+import com.amazon.kinesis.kafka.config.FirehoseSinkConnectorConfig;
 import com.amazon.kinesis.kafka.config.StreamFilterMapping;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.Cluster;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -73,30 +73,29 @@ public class FirehoseSinkTask extends SinkTask {
 
     protected void start(Map<String, String> props, AmazonKinesisFirehoseClient client) {
 
-		String mappingFileUrl = props.get(FirehoseSinkConnector.MAPPING_FILE);
-		if (mappingFileUrl != null) {
-		    log.info("Property for {} found. Attempting to load this configuration file.", FirehoseSinkConnector.MAPPING_FILE);
-            ClusterMapping clusterMapping = ConfigParser.parse(mappingFileUrl)
-					.orElseThrow(() -> new ConfigException("Parser could not correctly parse the mapping file: " + mappingFileUrl));
-			String cName = clusterMapping.getClusterName();
-			log.info("Using cluster name: {}", cName);
-			lookup = clusterMapping.getStreamsAsMap();
-			filters = clusterMapping.gatherStreamFilters();
-        } else {
-	        throw new ConfigException("Connector cannot start without required property value for either 'mappingFile'.");
-        }
+		log.info("Starting FirehoseSinkTask");
+		FirehoseSinkConnectorConfig config = new FirehoseSinkConnectorConfig(props);
+		String mappingFileUrl = config.getString(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG);
+		log.info("Attempting to load this mapping file at {}.", FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG);
 
-		batch = Boolean.parseBoolean(props.get(FirehoseSinkConnector.BATCH));
+		ClusterMapping clusterMapping = ConfigParser.parse(mappingFileUrl)
+				.orElseThrow(() -> new ConfigException("Parser could not correctly parse the mapping file: " + mappingFileUrl));
+		String cName = clusterMapping.getClusterName();
+		log.info("Using cluster name: {}", cName);
+		lookup = clusterMapping.getStreamsAsMap();
+		filters = clusterMapping.gatherStreamFilters();
+
+		batch = config.getBoolean(FirehoseSinkConnectorConfig.BATCH_CONFIG);
 		
-		batchSize = Integer.parseInt(props.get(FirehoseSinkConnector.BATCH_SIZE));
+		batchSize = config.getInt(FirehoseSinkConnectorConfig.BATCH_SIZE_CONFIG);
 		
-		batchSizeInBytes = Integer.parseInt(props.get(FirehoseSinkConnector.BATCH_SIZE_IN_BYTES));
+		batchSizeInBytes = config.getInt(FirehoseSinkConnectorConfig.BATCH_SIZE_IN_BYTES_CONFIG);
 
 		if (client != null) {
 		    this.firehoseClient = client;
         } else {
             firehoseClient = new AmazonKinesisFirehoseClient(new DefaultAWSCredentialsProviderChain());
-            firehoseClient.setRegion(RegionUtils.getRegion(props.get(FirehoseSinkConnector.REGION)));
+            firehoseClient.setRegion(RegionUtils.getRegion(props.get(FirehoseSinkConnectorConfig.REGION_CONFIG)));
         }
 
 		validateTopicToStreamsMappings(props);
@@ -115,7 +114,7 @@ public class FirehoseSinkTask extends SinkTask {
 	private void validateTopicToStreamsMappings(Map<String, String> props) {
 		log.info("[VALIDATING] all topics have an accompanying stream mappings entry");
 
-		String topicsConfig = props.getOrDefault(FirehoseSinkConnector.TOPICS_CONFIG, "");
+		String topicsConfig = props.getOrDefault(FirehoseSinkConnectorConfig.TOPICS_CONFIG, "");
 		String[] topics = topicsConfig.split(",");
 		Arrays.sort(topics);
 

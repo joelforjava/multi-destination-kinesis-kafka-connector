@@ -1,5 +1,6 @@
 package com.amazon.kinesis.kafka;
 
+import com.amazon.kinesis.kafka.config.FirehoseSinkConnectorConfig;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
@@ -7,12 +8,7 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class FirehoseSinkTaskTest {
@@ -22,10 +18,10 @@ public class FirehoseSinkTaskTest {
 
     private Map<String, String> createCommonProps() {
         Map<String, String> props = new LinkedHashMap<>();
-        props.put(FirehoseSinkConnector.BATCH_SIZE, "3");
-        props.put(FirehoseSinkConnector.BATCH_SIZE_IN_BYTES, "128");
-        props.put(FirehoseSinkConnector.REGION, "us-east-16");
-        props.put(FirehoseSinkConnector.BATCH, "true");
+        props.put(FirehoseSinkConnectorConfig.BATCH_SIZE_CONFIG, "3");
+        props.put(FirehoseSinkConnectorConfig.BATCH_SIZE_IN_BYTES_CONFIG, "128");
+        props.put(FirehoseSinkConnectorConfig.REGION_CONFIG, "us-east-16");
+        props.put(FirehoseSinkConnectorConfig.BATCH_CONFIG, "true");
 
         return props;
     }
@@ -40,10 +36,10 @@ public class FirehoseSinkTaskTest {
         MockFirehoseClient mockClient = new MockFirehoseClient();
         Map<String, String> props = createCommonProps();
         props.put(
-                FirehoseSinkConnector.TOPICS_CONFIG,
+                FirehoseSinkConnectorConfig.TOPICS_CONFIG,
                 "IMPORTANT.TOPIC,FASCINATING.TOPIC,METRICBEAT.TOPIC,LOGSTASH.TOPIC,RABBITMQ.TOPIC");
-        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
-        props.put(FirehoseSinkConnector.BATCH, "true");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_1.yaml");
+        props.put(FirehoseSinkConnectorConfig.BATCH_CONFIG, "true");
 
         task.start(props, mockClient);
 
@@ -81,10 +77,10 @@ public class FirehoseSinkTaskTest {
         MockFirehoseClient mockClient = new MockFirehoseClient();
         Map<String, String> props = createCommonProps();
         props.put(
-                FirehoseSinkConnector.TOPICS_CONFIG,
+                FirehoseSinkConnectorConfig.TOPICS_CONFIG,
                 "IMPORTANT.TOPIC,FASCINATING.TOPIC,METRICBEAT.TOPIC,LOGSTASH.TOPIC,RABBITMQ.TOPIC");
-        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
-        props.put(FirehoseSinkConnector.BATCH, "false");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_1.yaml");
+        props.put(FirehoseSinkConnectorConfig.BATCH_CONFIG, "false");
 
         task.start(props, mockClient);
 
@@ -123,9 +119,9 @@ public class FirehoseSinkTaskTest {
         FirehoseSinkTask task = new FirehoseSinkTask();
         MockFirehoseClient mockClient = new MockFirehoseClient();
         Map<String, String> props = createCommonProps();
-        props.put(FirehoseSinkConnector.TOPICS_CONFIG,
+        props.put(FirehoseSinkConnectorConfig.TOPICS_CONFIG,
                 "TEMPERATURES.TOPIC,BIOMETRICS.TOPIC,HURRICANES.TOPIC");
-        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_2_w_filters.yaml");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_2_w_filters.yaml");
 
         task.start(props, mockClient);
 
@@ -150,9 +146,9 @@ public class FirehoseSinkTaskTest {
         FirehoseSinkTask task = new FirehoseSinkTask();
         MockFirehoseClient mockClient = new MockFirehoseClient();
         Map<String, String> props = createCommonProps();
-        props.put(FirehoseSinkConnector.TOPICS_CONFIG,
+        props.put(FirehoseSinkConnectorConfig.TOPICS_CONFIG,
                 "TEMPERATURES.TOPIC,BIOMETRICS.TOPIC,HURRICANES.TOPIC");
-        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_2_w_filters.yaml");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_2_w_filters.yaml");
 
         task.start(props, mockClient);
 
@@ -177,9 +173,9 @@ public class FirehoseSinkTaskTest {
         FirehoseSinkTask task = new FirehoseSinkTask();
         MockFirehoseClient mockClient = new MockFirehoseClient();
         Map<String, String> props = createCommonProps();
-        props.put(FirehoseSinkConnector.TOPICS_CONFIG,
+        props.put(FirehoseSinkConnectorConfig.TOPICS_CONFIG,
                 "TEMPERATURES.TOPIC,BIOMETRICS.TOPIC,HURRICANES.TOPIC");
-        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_2_w_filters.yaml");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_2_w_filters.yaml");
 
         task.start(props, mockClient);
 
@@ -198,7 +194,19 @@ public class FirehoseSinkTaskTest {
         Assert.assertFalse(deliveryStreamNames.contains("HEARTRATE-STREAM"));
     }
 
-    @Test(expectedExceptions = ConfigException.class, expectedExceptionsMessageRegExp = "Connector cannot start.*")
+    @Test
+    public void testStartingWithoutSendingCommonPropsWillStartSuccessfully() {
+        FirehoseSinkTask task = new FirehoseSinkTask();
+        MockFirehoseClient mockClient = new MockFirehoseClient();
+        Map<String, String> props = new HashMap<>();
+        props.put(FirehoseSinkConnectorConfig.TOPICS_CONFIG,
+                "TEMPERATURES.TOPIC,BIOMETRICS.TOPIC,HURRICANES.TOPIC");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_2_w_filters.yaml");
+
+        task.start(props, mockClient);
+    }
+
+    @Test(expectedExceptions = ConfigException.class, expectedExceptionsMessageRegExp = "Missing required configuration.*")
     public void testNoMappingFileNameInConfigurationResultsInException() {
         FirehoseSinkTask task = new FirehoseSinkTask();
         MockFirehoseClient mockClient = new MockFirehoseClient();
@@ -213,7 +221,7 @@ public class FirehoseSinkTaskTest {
         MockFirehoseClient mockClient = new MockFirehoseClient();
 
         Map<String, String> props = createCommonProps();
-        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_1.yaml");
         task.start(props, mockClient);
     }
 
@@ -224,9 +232,9 @@ public class FirehoseSinkTaskTest {
 
         Map<String, String> props = createCommonProps();
         props.put(
-                FirehoseSinkConnector.TOPICS_CONFIG,
+                FirehoseSinkConnectorConfig.TOPICS_CONFIG,
                 "IMPORTANT.TOPIC,FASCINATING.TOPIC,METRICBEAT.TOPIC,LOGSTASH.TOPIC,RABBITMQ.TOPIC,ANOTHER.TOPIC");
-        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_1.yaml");
         task.start(props, mockClient);
     }
 
@@ -237,9 +245,9 @@ public class FirehoseSinkTaskTest {
 
         Map<String, String> props = createCommonProps();
         props.put(
-                FirehoseSinkConnector.TOPICS_CONFIG,
+                FirehoseSinkConnectorConfig.TOPICS_CONFIG,
                 "IMPORTANT.TOPIC,FASCINATING.TOPIC,METRICBEAT.TOPIC,LOGSTASH.TOPIC");
-        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_1.yaml");
         task.start(props, mockClient);
 
     }
@@ -250,8 +258,8 @@ public class FirehoseSinkTaskTest {
         MockFirehoseClient mockClient = new MockFirehoseClient();
 
         Map<String, String> props = createCommonProps();
-        props.put(FirehoseSinkConnector.TOPICS_CONFIG, "IMPORTANT.TOPIC");
-        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
+        props.put(FirehoseSinkConnectorConfig.TOPICS_CONFIG, "IMPORTANT.TOPIC");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_1.yaml");
         task.start(props, mockClient);
 
     }
@@ -264,9 +272,9 @@ public class FirehoseSinkTaskTest {
 
         Map<String, String> props = createCommonProps();
         props.put(
-                FirehoseSinkConnector.TOPICS_CONFIG,
+                FirehoseSinkConnectorConfig.TOPICS_CONFIG,
                 "IMPORTANT.TOPIC,FASCINATING.TOPIC,METRICBEAT.TOPIC,LOGSTASH.TOPIC,RABBITMQ.TOPIC");
-        props.put(FirehoseSinkConnector.MAPPING_FILE, "cluster_with_no_destinations.yaml");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "cluster_with_no_destinations.yaml");
         task.start(props, mockClient);
     }
 
@@ -278,9 +286,9 @@ public class FirehoseSinkTaskTest {
 
         Map<String, String> props = createCommonProps();
         props.put(
-                FirehoseSinkConnector.TOPICS_CONFIG,
+                FirehoseSinkConnectorConfig.TOPICS_CONFIG,
                 "IMPORTANT.TOPIC,FASCINATING.TOPIC,METRICBEAT.TOPIC,LOGSTASH.TOPIC,RABBITMQ.TOPIC");
-        props.put(FirehoseSinkConnector.MAPPING_FILE, "sample_cluster_1.yaml");
+        props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_1.yaml");
         task.start(props, mockClient);
     }
 }
