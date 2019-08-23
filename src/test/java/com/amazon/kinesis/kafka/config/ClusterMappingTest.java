@@ -14,7 +14,7 @@ public class ClusterMappingTest {
     void testGetStreamsAsMapIsCreatedAsExpected() throws Exception {
         String path = "sample_cluster_1.yaml";
 
-        Optional<ClusterMapping> optional = ConfigParser.parse(path);
+        Optional<ClusterMapping> optional = MappingConfigParser.parse(path);
         Assert.assertTrue(optional.isPresent());
         ClusterMapping mapping = optional.get();
         List<DestinationStreamMapping> streams =  mapping.getStreams();
@@ -30,7 +30,7 @@ public class ClusterMappingTest {
     void testGatherStreamFiltersCollectsAsExpected() {
         String path = "sample_cluster_2_w_filters.yaml";
 
-        ClusterMapping mapping = ConfigParser.parse(path).orElseThrow(() -> new ConfigException(""));
+        ClusterMapping mapping = MappingConfigParser.parse(path).orElseThrow(() -> new ConfigException(""));
         Map<String, List<StreamFilterMapping>> filtersMap = mapping.gatherStreamFilters();
         List<DestinationStreamMapping> streams =  mapping.getStreams();
         DestinationStreamMapping destinationStreamMapping = streams.stream()

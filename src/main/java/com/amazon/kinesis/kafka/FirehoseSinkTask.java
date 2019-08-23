@@ -3,7 +3,7 @@ package com.amazon.kinesis.kafka;
 import java.util.*;
 
 import com.amazon.kinesis.kafka.config.ClusterMapping;
-import com.amazon.kinesis.kafka.config.ConfigParser;
+import com.amazon.kinesis.kafka.config.MappingConfigParser;
 import com.amazon.kinesis.kafka.config.FirehoseSinkConnectorConfig;
 import com.amazon.kinesis.kafka.config.StreamFilterMapping;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -78,7 +78,7 @@ public class FirehoseSinkTask extends SinkTask {
 		String mappingFileUrl = config.getString(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG);
 		log.info("Attempting to load this mapping file at {}.", FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG);
 
-		ClusterMapping clusterMapping = ConfigParser.parse(mappingFileUrl)
+		ClusterMapping clusterMapping = MappingConfigParser.parse(mappingFileUrl)
 				.orElseThrow(() -> new ConfigException("Parser could not correctly parse the mapping file: " + mappingFileUrl));
 		String cName = clusterMapping.getClusterName();
 		log.info("Using cluster name: {}", cName);

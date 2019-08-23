@@ -12,7 +12,7 @@ public class DestinationStreamMappingTest {
     void testFiltersAreEmptyWhenNoneAreInYamlConfig() {
         String path = "sample_cluster_2_w_filters.yaml";
 
-        ClusterMapping mapping = ConfigParser.parse(path)
+        ClusterMapping mapping = MappingConfigParser.parse(path)
                                              .orElseThrow(() -> new ConfigException(""));
         List<DestinationStreamMapping> streams =  mapping.getStreams();
         boolean emptyFilterListsExist = streams.stream().anyMatch(stream -> stream.getFilters().isEmpty());

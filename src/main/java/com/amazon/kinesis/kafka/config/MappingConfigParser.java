@@ -14,16 +14,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-public class ConfigParser {
+public class MappingConfigParser {
 
-    private static final Logger log = LoggerFactory.getLogger(ConfigParser.class);
+    private static final Logger log = LoggerFactory.getLogger(MappingConfigParser.class);
 
-    private ConfigParser() { }
+    private MappingConfigParser() { }
 
     private static File loadAsResource(String fileUrl) {
         File configFile = null;
         try {
-            URL url = ConfigParser.class.getClassLoader().getResource(fileUrl);
+            URL url = MappingConfigParser.class.getClassLoader().getResource(fileUrl);
             if (url != null) {
                 Path path = Paths.get(url.toURI());
                 configFile = path.toFile();

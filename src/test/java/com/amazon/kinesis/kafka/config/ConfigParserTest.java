@@ -14,7 +14,7 @@ public class ConfigParserTest {
     public void testParseCanLoadValidClusterMappingYaml() throws Exception {
         String path = "sample_cluster_1.yaml";
 
-        Optional<ClusterMapping> mapping = ConfigParser.parse(path);
+        Optional<ClusterMapping> mapping = MappingConfigParser.parse(path);
         Assert.assertTrue(mapping.isPresent());
 
         ClusterMapping clusterMapping = mapping.get();
@@ -26,7 +26,7 @@ public class ConfigParserTest {
         String configDirectory = loadConfigDirectory();
         String path = configDirectory + File.separator + "cluster_1" + File.separator + "streamMapping.yaml";
 
-        Optional<ClusterMapping> mapping = ConfigParser.parse(path);
+        Optional<ClusterMapping> mapping = MappingConfigParser.parse(path);
         Assert.assertTrue(mapping.isPresent());
 
         ClusterMapping clusterMapping = mapping.get();
@@ -37,7 +37,7 @@ public class ConfigParserTest {
     @Test
     void testParserWillReturnNullForInvalidClusterMappingYaml() throws Exception {
         String path = "badCluster.yaml";
-        Optional<ClusterMapping> mapping = ConfigParser.parse(path);
+        Optional<ClusterMapping> mapping = MappingConfigParser.parse(path);
 
         Assert.assertFalse(mapping.isPresent());
     }
@@ -45,7 +45,7 @@ public class ConfigParserTest {
     @Test
     void testParserCanParseYamlWithFilterMapping() {
         String path = "sample_cluster_2_w_filters.yaml";
-        Optional<ClusterMapping> mapping = ConfigParser.parse(path);
+        Optional<ClusterMapping> mapping = MappingConfigParser.parse(path);
         Assert.assertTrue(mapping.isPresent());
 
         ClusterMapping clusterMapping = mapping.get();
