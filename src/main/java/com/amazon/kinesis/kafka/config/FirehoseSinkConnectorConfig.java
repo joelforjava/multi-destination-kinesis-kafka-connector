@@ -3,6 +3,11 @@ package com.amazon.kinesis.kafka.config;
 import com.amazon.kinesis.kafka.FirehoseSinkConnector;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigDef.Importance;
+import org.apache.kafka.common.config.ConfigDef.Range;
+import org.apache.kafka.common.config.ConfigDef.Type;
+import org.apache.kafka.common.config.ConfigDef.Validator;
+import org.apache.kafka.common.config.ConfigDef.Width;
 
 import java.util.Map;
 
@@ -25,7 +30,15 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
 
     public static final int MAX_BATCH_SIZE = 500;
 
-    public static final int MAX_BATCH_SIZE_IN_BYTES = 3670016;
+    public static final int DEFAULT_BATCH_SIZE = MAX_BATCH_SIZE;
+
+    public static final int MAX_BATCH_SIZE_IN_BYTES = 4_000_000;
+
+    public static final int DEFAULT_BATCH_SIZE_IN_BYTES = 3_670_016;
+
+    private static final Range batchSizeValidator = Range.between(0, MAX_BATCH_SIZE);
+
+    private static final Validator batchSizeInBytesValidator = Range.between(0, MAX_BATCH_SIZE_IN_BYTES);
 
     protected static ConfigDef baseConfigDef() {
         final ConfigDef configDef = new ConfigDef();
@@ -38,53 +51,55 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
         final String group = "AWS Configuration";
         configDef.define(
                 REGION_CONFIG,
-                ConfigDef.Type.STRING,
+                Type.STRING,
                 "us-east-1",
-                ConfigDef.Importance.HIGH,
+                Importance.HIGH,
                 "Specify the region of your Kinesis Firehose",
                 group,
                 ++offset,
-                ConfigDef.Width.SHORT,
+                Width.SHORT,
                 "AWS Region")
             .define(
                 MAPPING_FILE_CONFIG,
-                ConfigDef.Type.STRING,
-                ConfigDef.Importance.HIGH,
+                Type.STRING,
+                Importance.HIGH,
                 "Location of the YAML Mapping file that defines the mapping from topics to destinations",
                 group,
                 ++offset,
-                ConfigDef.Width.MEDIUM,
+                Width.MEDIUM,
                 "Mapping Configuration Location")
             .define(
                 BATCH_CONFIG,
-                ConfigDef.Type.BOOLEAN,
+                Type.BOOLEAN,
                 false,
-                ConfigDef.Importance.HIGH,
+                Importance.HIGH,
                 "Should the connector batch messages before sending to Kinesis Firehose?",
                 group,
                 ++offset,
-                ConfigDef.Width.SHORT,
+                Width.SHORT,
                 "Batch Send")
             .define(
                 BATCH_SIZE_CONFIG,
-                ConfigDef.Type.INT,
-                MAX_BATCH_SIZE,
-                ConfigDef.Importance.HIGH,
+                Type.INT,
+                DEFAULT_BATCH_SIZE,
+                batchSizeValidator,
+                Importance.HIGH,
                 "Number of messages to be batched together. Firehose accepts at max 500 messages in one batch.",
                 group,
                 ++offset,
-                ConfigDef.Width.SHORT,
+                Width.SHORT,
                 "Maximum Number of Messages to Batch")
             .define(
                 BATCH_SIZE_IN_BYTES_CONFIG,
-                ConfigDef.Type.INT,
-                MAX_BATCH_SIZE_IN_BYTES,
-                ConfigDef.Importance.HIGH,
+                Type.INT,
+                DEFAULT_BATCH_SIZE_IN_BYTES,
+                batchSizeInBytesValidator,
+                Importance.HIGH,
                 "Message size in bytes when batched together. Firehose accepts at max 4MB in one batch.",
                 group,
                 ++offset,
-                ConfigDef.Width.MEDIUM,
-                "Maximum Number of Messages to Batch");
+                Width.MEDIUM,
+                "Maximum Number of Bytes to Batch");
     }
 
     public static ConfigDef CONFIG = baseConfigDef();

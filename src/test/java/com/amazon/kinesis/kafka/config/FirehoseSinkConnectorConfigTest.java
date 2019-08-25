@@ -31,7 +31,7 @@ public class FirehoseSinkConnectorConfigTest {
         props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_2_w_filters.yaml");
         FirehoseSinkConnectorConfig config = new FirehoseSinkConnectorConfig(props);
         Assert.assertEquals(
-                Integer.valueOf(FirehoseSinkConnectorConfig.MAX_BATCH_SIZE_IN_BYTES),
+                Integer.valueOf(FirehoseSinkConnectorConfig.DEFAULT_BATCH_SIZE_IN_BYTES),
                 config.getInt(FirehoseSinkConnectorConfig.BATCH_SIZE_IN_BYTES_CONFIG));
         Assert.assertEquals(
                 Integer.valueOf(FirehoseSinkConnectorConfig.MAX_BATCH_SIZE),
@@ -66,17 +66,12 @@ public class FirehoseSinkConnectorConfigTest {
                 config.getList(FirehoseSinkConnectorConfig.TOPICS_CONFIG));
     }
 
-    @Test
-    public void testPropertyWithMaxValueCanBeSetOverLimit() {
+    @Test(expectedExceptions = ConfigException.class, expectedExceptionsMessageRegExp = "Invalid value.*")
+    public void testPropertyWithInvalidMaxValueWillBeRejected() {
         Map<String, String> props = new HashMap<>();
         String batchSize = "5000";
         props.put(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG, "sample_cluster_2_w_filters.yaml");
         props.put(FirehoseSinkConnectorConfig.BATCH_SIZE_CONFIG, batchSize);
         FirehoseSinkConnectorConfig config = new FirehoseSinkConnectorConfig(props);
-        // TODO - figure out how to invalidate configs!
-        Assert.assertEquals(
-                Integer.valueOf(batchSize),
-                config.getInt(FirehoseSinkConnectorConfig.BATCH_SIZE_CONFIG));
-
     }
 }
