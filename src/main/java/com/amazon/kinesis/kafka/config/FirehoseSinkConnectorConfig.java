@@ -50,9 +50,6 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
     private static final Validator BATCH_SIZE_IN_BYTES_VALIDATOR = Range.between(0, MAX_BATCH_SIZE_IN_BYTES);
 
     private static final Validator MAPPING_FILE_VALIDATOR = (name, value) -> {
-        if (value == null) {
-            throw new ConfigException(name, value, "Missing required configuration");
-        }
         String fileNameOrLocation = (String) value;
         MappingConfigParser.parse(fileNameOrLocation)
                 .orElseThrow(() -> new ConfigException(name, value, "Parser could not correctly parse the mapping file"));
@@ -84,8 +81,8 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
             .define(
                 MAPPING_FILE_CONFIG,
                 Type.STRING,
-//                null,
-//                MAPPING_FILE_VALIDATOR,
+                ConfigDef.NO_DEFAULT_VALUE,
+                MAPPING_FILE_VALIDATOR,
                 Importance.HIGH,
                 "Location of the YAML Mapping file that defines the mapping from topics to destinations",
                 group,
