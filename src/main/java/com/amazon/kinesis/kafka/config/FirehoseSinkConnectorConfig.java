@@ -1,15 +1,17 @@
 package com.amazon.kinesis.kafka.config;
 
 import com.amazon.kinesis.kafka.FirehoseSinkConnector;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.RegionUtils;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
-import org.apache.kafka.common.config.ConfigDef.Importance;
-import org.apache.kafka.common.config.ConfigDef.Range;
-import org.apache.kafka.common.config.ConfigDef.Type;
-import org.apache.kafka.common.config.ConfigDef.Validator;
-import org.apache.kafka.common.config.ConfigDef.Width;
+import org.apache.kafka.common.config.ConfigDef.*;
+import org.apache.kafka.common.config.ConfigException;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class FirehoseSinkConnectorConfig extends AbstractConfig {
 
@@ -36,9 +38,27 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
 
     public static final int DEFAULT_BATCH_SIZE_IN_BYTES = 3_670_016;
 
-    private static final Range batchSizeValidator = Range.between(0, MAX_BATCH_SIZE);
+    private static final String[] VALID_REGIONS = RegionUtils.getRegions()
+                                                             .stream()
+                                                             .map(Region::getName)
+                                                             .toArray(String[]::new);
 
-    private static final Validator batchSizeInBytesValidator = Range.between(0, MAX_BATCH_SIZE_IN_BYTES);
+    private static final Validator REGION_VALIDATOR = ValidString.in(VALID_REGIONS);
+
+    private static final Validator BATCH_SIZE_VALIDATOR = Range.between(0, MAX_BATCH_SIZE);
+
+    private static final Validator BATCH_SIZE_IN_BYTES_VALIDATOR = Range.between(0, MAX_BATCH_SIZE_IN_BYTES);
+
+    private static final Validator MAPPING_FILE_VALIDATOR = (name, value) -> {
+        if (value == null) {
+            throw new ConfigException(name, value, "Missing required configuration");
+        }
+        String fileNameOrLocation = (String) value;
+        MappingConfigParser.parse(fileNameOrLocation)
+                .orElseThrow(() -> new ConfigException(name, value, "Parser could not correctly parse the mapping file"));
+    };
+
+    private static final Recommender REGION_RECOMMENDER = regionRecommender();
 
     protected static ConfigDef baseConfigDef() {
         final ConfigDef configDef = new ConfigDef();
@@ -53,15 +73,19 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
                 REGION_CONFIG,
                 Type.STRING,
                 "us-east-1",
+                REGION_VALIDATOR,
                 Importance.HIGH,
                 "Specify the region of your Kinesis Firehose",
                 group,
                 ++offset,
                 Width.SHORT,
-                "AWS Region")
+                "AWS Region",
+                REGION_RECOMMENDER)
             .define(
                 MAPPING_FILE_CONFIG,
                 Type.STRING,
+//                null,
+//                MAPPING_FILE_VALIDATOR,
                 Importance.HIGH,
                 "Location of the YAML Mapping file that defines the mapping from topics to destinations",
                 group,
@@ -82,7 +106,7 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
                 BATCH_SIZE_CONFIG,
                 Type.INT,
                 DEFAULT_BATCH_SIZE,
-                batchSizeValidator,
+                    BATCH_SIZE_VALIDATOR,
                 Importance.HIGH,
                 "Number of messages to be batched together. Firehose accepts at max 500 messages in one batch.",
                 group,
@@ -93,13 +117,27 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
                 BATCH_SIZE_IN_BYTES_CONFIG,
                 Type.INT,
                 DEFAULT_BATCH_SIZE_IN_BYTES,
-                batchSizeInBytesValidator,
+                    BATCH_SIZE_IN_BYTES_VALIDATOR,
                 Importance.HIGH,
                 "Message size in bytes when batched together. Firehose accepts at max 4MB in one batch.",
                 group,
                 ++offset,
                 Width.MEDIUM,
                 "Maximum Number of Bytes to Batch");
+    }
+
+    private static Recommender regionRecommender() {
+        return new Recommender() {
+            @Override
+            public List<Object> validValues(String name, Map<String, Object> parsedConfig) {
+                return Arrays.asList(VALID_REGIONS);
+            }
+
+            @Override
+            public boolean visible(String name, Map<String, Object> parsedConfig) {
+                return true;
+            }
+        };
     }
 
     public static ConfigDef CONFIG = baseConfigDef();

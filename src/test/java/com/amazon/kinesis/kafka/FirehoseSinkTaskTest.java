@@ -20,7 +20,7 @@ public class FirehoseSinkTaskTest {
         Map<String, String> props = new LinkedHashMap<>();
         props.put(FirehoseSinkConnectorConfig.BATCH_SIZE_CONFIG, "3");
         props.put(FirehoseSinkConnectorConfig.BATCH_SIZE_IN_BYTES_CONFIG, "128");
-        props.put(FirehoseSinkConnectorConfig.REGION_CONFIG, "us-east-16");
+        props.put(FirehoseSinkConnectorConfig.REGION_CONFIG, "us-east-1");
         props.put(FirehoseSinkConnectorConfig.BATCH_CONFIG, "true");
 
         return props;
