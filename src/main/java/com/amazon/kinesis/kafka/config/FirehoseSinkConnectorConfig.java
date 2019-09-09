@@ -66,61 +66,56 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
     private static void addBaseConfig(ConfigDef configDef) {
         int offset = 0;
         final String group = "AWS Configuration";
-        configDef.define(
-                REGION_CONFIG,
-                Type.STRING,
-                "us-east-1",
-                REGION_VALIDATOR,
-                Importance.HIGH,
-                "Specify the region of your Kinesis Firehose",
-                group,
-                ++offset,
-                Width.SHORT,
-                "AWS Region",
-                REGION_RECOMMENDER)
-            .define(
-                MAPPING_FILE_CONFIG,
-                Type.STRING,
-                ConfigDef.NO_DEFAULT_VALUE,
-                MAPPING_FILE_VALIDATOR,
-                Importance.HIGH,
-                "Location of the YAML Mapping file that defines the mapping from topics to destinations",
-                group,
-                ++offset,
-                Width.MEDIUM,
-                "Mapping Configuration Location")
-            .define(
-                BATCH_CONFIG,
-                Type.BOOLEAN,
-                false,
-                Importance.HIGH,
-                "Should the connector batch messages before sending to Kinesis Firehose?",
-                group,
-                ++offset,
-                Width.SHORT,
-                "Batch Send")
-            .define(
-                BATCH_SIZE_CONFIG,
-                Type.INT,
-                DEFAULT_BATCH_SIZE,
-                    BATCH_SIZE_VALIDATOR,
-                Importance.HIGH,
-                "Number of messages to be batched together. Firehose accepts at max 500 messages in one batch.",
-                group,
-                ++offset,
-                Width.SHORT,
-                "Maximum Number of Messages to Batch")
-            .define(
-                BATCH_SIZE_IN_BYTES_CONFIG,
-                Type.INT,
-                DEFAULT_BATCH_SIZE_IN_BYTES,
-                    BATCH_SIZE_IN_BYTES_VALIDATOR,
-                Importance.HIGH,
-                "Message size in bytes when batched together. Firehose accepts at max 4MB in one batch.",
-                group,
-                ++offset,
-                Width.MEDIUM,
-                "Maximum Number of Bytes to Batch");
+        configDef.define(new ConfigKeyBuilder(REGION_CONFIG)
+                .type(Type.STRING)
+                .defaultValue("us-east-1")
+                .validator(REGION_VALIDATOR)
+                .importance(Importance.HIGH)
+                .documentation("Specify the region of your Kinesis Firehose")
+                .group(group)
+                .orderInGroup(++offset)
+                .width(Width.SHORT)
+                .displayName("AWS Region")
+                .recommender(REGION_RECOMMENDER).build())
+            .define(new ConfigKeyBuilder(MAPPING_FILE_CONFIG)
+                    .type(Type.STRING)
+                    .defaultValue(ConfigDef.NO_DEFAULT_VALUE)
+                    .validator(MAPPING_FILE_VALIDATOR)
+                    .importance(Importance.HIGH)
+                    .documentation("Location of the YAML Mapping file that defines the mapping from topics to destinations")
+                    .group(group)
+                    .orderInGroup(++offset)
+                    .width(Width.MEDIUM)
+                    .displayName("Mapping Configuration Location").build())
+            .define(new ConfigKeyBuilder(BATCH_CONFIG)
+                    .type(Type.BOOLEAN)
+                    .defaultValue(false)
+                    .importance(Importance.HIGH)
+                    .documentation("Should the connector batch messages before sending to Kinesis Firehose?")
+                    .group(group)
+                    .orderInGroup(++offset)
+                    .width(Width.SHORT)
+                    .displayName("Batch Send").build())
+            .define(new ConfigKeyBuilder(BATCH_SIZE_CONFIG)
+                    .type(Type.INT)
+                    .defaultValue(DEFAULT_BATCH_SIZE)
+                    .validator(BATCH_SIZE_VALIDATOR)
+                    .importance(Importance.HIGH)
+                    .documentation("Number of messages to be batched together. Firehose accepts at max 500 messages in one batch.")
+                    .group(group)
+                    .orderInGroup(++offset)
+                    .width(Width.SHORT)
+                    .displayName("Maximum Number of Messages to Batch").build())
+            .define(new ConfigKeyBuilder(BATCH_SIZE_IN_BYTES_CONFIG)
+                    .type(Type.INT)
+                    .defaultValue(DEFAULT_BATCH_SIZE_IN_BYTES)
+                    .validator(BATCH_SIZE_IN_BYTES_VALIDATOR)
+                    .importance(Importance.HIGH)
+                    .documentation("Message size in bytes when batched together. Firehose accepts at max 4MB in one batch.")
+                    .group(group)
+                    .orderInGroup(++offset)
+                    .width(Width.MEDIUM)
+                    .displayName("Maximum Number of Bytes to Batch").build());
     }
 
     private static Recommender regionRecommender() {
