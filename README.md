@@ -1,5 +1,7 @@
 ### Introduction
 
+This is a variation of the Kafka-Kinesis-Connector from [AWSLabs](https://github.com/awslabs/kinesis-kafka-connector). I originally forked from this version, but it has diverged a lot from the original. However, while making tweaks, I wanted to try and submit some of those changes to the original repo. This would be pretty messy with my setup. So, I created this version that will be dedicated to a Connector that can send to multiple Firehose destinations while I revert these changes from my original fork so that it can be usable with any pull requests I may want to submit. I have updated this document, where possible, that documents where it diverges from the original connector.
+
 The Kafka-Kinesis-Connector is a connector to be used with [Kafka Connect](https://kafka.apache.org/documentation/#connect) to publish messages from Kafka to [Amazon Kinesis Streams](https://aws.amazon.com/kinesis/streams/) or [Amazon Kinesis Firehose](https://aws.amazon.com/kinesis/firehose/).
 
 Kafka-Kinesis-Connector for Firehose is used to publish messages from Kafka to one of the following destinations: [Amazon S3](https://aws.amazon.com/s3/), [Amazon Redshift](https://aws.amazon.com/redshift/), or [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) and in turn enabling near real time analytics with existing business intelligence tools and dashboards. Amazon Kinesis Firehose has ability to transform, batch, archive message onto S3 and retry if destination is unavailable.
@@ -42,8 +44,30 @@ You can build the project by running "maven package" and it will build amazon-ki
 | batch | Connector batches messages before sending to Kinesis Firehose (true/false) | true |
 | batchSize | Number of messages to be batched together. Firehose accepts at max 500 messages in one batch. | 500 |
 | batchSizeInBytes | Message size in bytes when batched together. Firehose accepts at max 4MB in one batch. | 3670016 |
-| deliveryStream | Firehose Destination Delivery Stream.| -
+| streamMapping | Location of the YAML file that defines a mapping from topics to destinations.| -
 
+
+##### streamMapping example
+
+    - name: BIOMETRICS.TOPIC
+    destinations:
+        - BIOMETRICS-STREAM
+        - S3-BIOMETRICS-STREAM
+    filters:
+        - sourceTopic: BIOMETRICS.TOPIC
+        destinationStreamNames:
+            - BLOODPRESSURE-STREAM
+        keywords:
+            - Blood pressure
+            - Bloodpressure
+            - blood pressure
+        - sourceTopic: BIOMETRICS.TOPIC
+        destinationStreamNames:
+            - HEARTRATE-STREAM
+        startingPhrases:
+            - Heart rate
+
+This file must be present on all Kafka Connect nodes. This is a limitation I'm hoping to eliminate at some point in the future.
 
 ### Pre-Running Steps for Kafka-Kinesis-Connector for Streams
 
