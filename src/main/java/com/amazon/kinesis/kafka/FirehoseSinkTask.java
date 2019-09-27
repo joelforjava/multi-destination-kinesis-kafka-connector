@@ -6,6 +6,7 @@ import com.amazon.kinesis.kafka.config.ClusterMapping;
 import com.amazon.kinesis.kafka.config.MappingConfigParser;
 import com.amazon.kinesis.kafka.config.FirehoseSinkConnectorConfig;
 import com.amazon.kinesis.kafka.config.StreamFilterMapping;
+import com.amazonaws.services.kinesisfirehose.model.*;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigException;
@@ -15,14 +16,6 @@ import org.apache.kafka.connect.sink.SinkTask;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseClient;
-import com.amazonaws.services.kinesisfirehose.model.AmazonKinesisFirehoseException;
-import com.amazonaws.services.kinesisfirehose.model.DescribeDeliveryStreamRequest;
-import com.amazonaws.services.kinesisfirehose.model.DescribeDeliveryStreamResult;
-import com.amazonaws.services.kinesisfirehose.model.PutRecordBatchRequest;
-import com.amazonaws.services.kinesisfirehose.model.PutRecordBatchResult;
-import com.amazonaws.services.kinesisfirehose.model.PutRecordRequest;
-import com.amazonaws.services.kinesisfirehose.model.PutRecordResult;
-import com.amazonaws.services.kinesisfirehose.model.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,38 +155,6 @@ public class FirehoseSinkTask extends SinkTask {
 	}
 
     /**
-     * Method to perform PutRecordBatch operation with the given record list.
-     *
-     * @param recordList
-     *            the collection of records
-     * @return the output of PutRecordBatch
-     */
-    private PutRecordBatchResult putRecordBatch(List<Record> recordList, String deliveryStreamName) {
-        PutRecordBatchRequest putRecordBatchRequest = new PutRecordBatchRequest();
-        putRecordBatchRequest.setDeliveryStreamName(deliveryStreamName);
-        putRecordBatchRequest.setRecords(recordList);
-
-        log.debug("[TRYING] stream: " + deliveryStreamName + " record count: " + recordList.size());
-
-        // Put Record Batch records. Max No.Of Records we can put in a
-        // single put record batch request is 500 and total size < 4MB
-        PutRecordBatchResult putRecordBatchResult = null;
-        try {
-            putRecordBatchResult = firehoseClient.putRecordBatch(putRecordBatchRequest);
-        }catch(AmazonKinesisFirehoseException akfe){
-            log.error("Amazon Kinesis Firehose Exception:" + akfe.getLocalizedMessage());
-            throw akfe;
-        }catch(Exception e){
-            log.error("Connector Exception" + e.getLocalizedMessage());
-            throw e;
-        }
-
-        log.info("[SUCCESS] stream: " + deliveryStreamName + " record count: " + recordList.size());
-
-        return putRecordBatchResult;
-    }
-
-    /**
 	 * @param sinkRecords
 	 */
 	private void putRecordsInBatch(Collection<SinkRecord> sinkRecords) {
@@ -218,7 +179,7 @@ public class FirehoseSinkTask extends SinkTask {
 			recordsSizeInBytes += record.getData().capacity();
 						
 			if (recordsInBatch == batchSize || recordsSizeInBytes > batchSizeInBytes) {
-				putBatch(recordList);
+				putRecordBatch(recordList);
 				recordList.clear();
 				recordsInBatch = 0;
 				recordsSizeInBytes = 0;
@@ -226,15 +187,48 @@ public class FirehoseSinkTask extends SinkTask {
 		}
 
 		if (recordsInBatch > 0) {
-			// putRecordBatch(recordList);
-            putBatch(recordList);
+			putRecordBatch(recordList);
 		}
 	}
 
-
-	private void putBatch(Map<String, List<Record>> recordList) {
+	private void putRecordBatch(Map<String, List<Record>> recordList) {
         recordList.forEach((key, value) -> putRecordBatch(value, key));
     }
+
+	/**
+	 * Method to perform PutRecordBatch operation with the given record list.
+	 *
+	 * @param recordList
+	 *            the collection of records
+	 * @return the output of PutRecordBatch
+	 */
+	private PutRecordBatchResult putRecordBatch(List<Record> recordList, String deliveryStreamName) {
+		PutRecordBatchRequest putRecordBatchRequest = new PutRecordBatchRequest();
+		putRecordBatchRequest.setDeliveryStreamName(deliveryStreamName);
+		putRecordBatchRequest.setRecords(recordList);
+
+		log.debug("[TRYING] stream: " + deliveryStreamName + " record count: " + recordList.size());
+
+		// Put Record Batch records. Max No.Of Records we can put in a
+		// single put record batch request is 500 and total size < 4MB
+		PutRecordBatchResult putRecordBatchResult = null;
+		try {
+			putRecordBatchResult = firehoseClient.putRecordBatch(putRecordBatchRequest);
+		} catch (ResourceNotFoundException rnfe) {
+			log.error("Resource {} was not found!", deliveryStreamName);
+			throw rnfe;
+		}catch(AmazonKinesisFirehoseException akfe){
+			log.error("Amazon Kinesis Firehose Exception:" + akfe.getLocalizedMessage());
+			throw akfe;
+		}catch(Exception e){
+			log.error("Connector Exception" + e.getLocalizedMessage());
+			throw e;
+		}
+
+		log.info("[SUCCESS] stream: " + deliveryStreamName + " record count: " + recordList.size());
+
+		return putRecordBatchResult;
+	}
 
 	/**
 	 * @param sinkRecords
