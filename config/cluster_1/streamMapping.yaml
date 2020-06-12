@@ -1,22 +1,16 @@
 clusterName: CLUSTER_1
 streams:
-    - name: IMPORTANT.TOPIC
+    - name: beats
       destinations:
-      - IMPORTANT-STREAM
-      - S3-IMPORTANT-STREAM
-    - name: FASCINATING.TOPIC
-      destinations:
-      - FASCINATING-STREAM
-      - S3-FASCINATING-STREAM
-    - name: METRICBEAT.TOPIC
-      destinations:
-      - METRICBEAT-STREAM
-      - S3-METRICBEAT-STREAM
-    - name: LOGSTASH.TOPIC
-      destinations:
-      - LOGSTASH-STREAM
-      - S3-LOGSTASH-STREAM
-    - name: RABBITMQ.TOPIC
-      destinations:
-      - RABBITMQ-STREAM
-      - S3-RABBITMQ-STREAM
+      - BEATS-STREAM
+      filters:
+        - sourceTopic: beats
+          destinationStreamNames:
+            - AUDITBEAT-STREAM
+          keywords:
+            - auditbeat
+        - sourceTopic: beats
+          destinationStreamNames:
+            - METRICBEAT-STREAM
+          keywords:
+            - metricbeat
