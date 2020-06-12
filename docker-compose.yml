@@ -1,0 +1,19 @@
+version: '3.3'
+
+services:
+
+  connect-distributed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8083
+    volumes:
+      - ./tmp_out:/tmp
+    network_mode: host  # This disables port forwarding
+    # networks:
+    #   - connectnet
+
+# networks:
+#   connectnet:
+#     driver: bridge

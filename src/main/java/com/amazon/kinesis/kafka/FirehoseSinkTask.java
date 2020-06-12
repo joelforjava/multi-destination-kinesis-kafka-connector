@@ -87,9 +87,10 @@ public class FirehoseSinkTask extends SinkTask {
 		if (client != null) {
 		    this.firehoseClient = client;
         } else {
-            firehoseClient = new AmazonKinesisFirehoseClient(new DefaultAWSCredentialsProviderChain());
-            firehoseClient.setRegion(RegionUtils.getRegion(props.get(FirehoseSinkConnectorConfig.REGION_CONFIG)));
-        }
+            this.firehoseClient = new AmazonKinesisFirehoseClient(new DefaultAWSCredentialsProviderChain());
+            this.firehoseClient.setRegion(RegionUtils.getRegion(props.get(FirehoseSinkConnectorConfig.REGION_CONFIG)));
+			this.firehoseClient.setEndpoint("http://localstack.joelforjava.local:4573");
+		}
 
 		validateTopicToStreamsMappings(props);
 
@@ -263,7 +264,7 @@ public class FirehoseSinkTask extends SinkTask {
 	private List<String> determineDestinationStreams(SinkRecord sinkRecord) {
 		String topic = sinkRecord.topic();
 
-		List<String> streams = lookup.get(topic);
+		List<String> streams = new ArrayList<>(lookup.get(topic));
 
 		final List<StreamFilterMapping> filterMappings = filters.get(topic);
 		boolean isFilterable = filterMappings != null && !filterMappings.isEmpty();
