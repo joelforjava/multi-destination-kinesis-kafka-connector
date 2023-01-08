@@ -30,6 +30,8 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
 
     public static final String MAPPING_FILE_CONFIG = "mappingFile";
 
+    public static final String BACKOFF_MILLIS_CONFIG = "retryBackoffMs";
+
     public static final int MAX_BATCH_SIZE = 500;
 
     public static final int DEFAULT_BATCH_SIZE = MAX_BATCH_SIZE;
@@ -37,6 +39,10 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
     public static final int MAX_BATCH_SIZE_IN_BYTES = 4_000_000;
 
     public static final int DEFAULT_BATCH_SIZE_IN_BYTES = 3_670_016;
+
+    public static final int MAX_BACKOFF_MILLIS = 60_000;
+
+    public static final int DEFAULT_BACKOFF_MILLIS = 5000;
 
     private static final String[] VALID_REGIONS = RegionUtils.getRegions()
                                                              .stream()
@@ -48,6 +54,8 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
     private static final Validator BATCH_SIZE_VALIDATOR = Range.between(0, MAX_BATCH_SIZE);
 
     private static final Validator BATCH_SIZE_IN_BYTES_VALIDATOR = Range.between(0, MAX_BATCH_SIZE_IN_BYTES);
+
+    private static final Validator BACKOFF_MILLIS_VALIDATOR = Range.between(1, MAX_BACKOFF_MILLIS);
 
     private static final Validator MAPPING_FILE_VALIDATOR = (name, value) -> {
         String fileNameOrLocation = (String) value;
@@ -115,7 +123,17 @@ public class FirehoseSinkConnectorConfig extends AbstractConfig {
                     .group(group)
                     .orderInGroup(++offset)
                     .width(Width.MEDIUM)
-                    .displayName("Maximum Number of Bytes to Batch").build());
+                    .displayName("Maximum Number of Bytes to Batch").build())
+            .define(new ConfigKeyBuilder(BACKOFF_MILLIS_CONFIG)
+                    .type(Type.INT)
+                    .defaultValue(DEFAULT_BACKOFF_MILLIS)
+                    .validator(BACKOFF_MILLIS_VALIDATOR)
+                    .importance(Importance.HIGH)
+                    .documentation("Number of milliseconds to wait to retry failed connections to the Firehose service.")
+                    .group(group)
+                    .orderInGroup(++offset)
+                    .width(Width.MEDIUM)
+                    .displayName("Retry Service Request Millis").build());
     }
 
     private static Recommender regionRecommender() {

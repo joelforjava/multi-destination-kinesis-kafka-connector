@@ -6,6 +6,7 @@ import com.amazon.kinesis.kafka.config.ClusterMapping;
 import com.amazon.kinesis.kafka.config.MappingConfigParser;
 import com.amazon.kinesis.kafka.config.FirehoseSinkConnectorConfig;
 import com.amazon.kinesis.kafka.config.StreamFilterMapping;
+import com.amazonaws.services.dynamodbv2.xspec.M;
 import com.amazonaws.services.kinesisfirehose.model.*;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -84,6 +85,9 @@ public class FirehoseSinkTask extends SinkTask {
 		
 		batchSizeInBytes = config.getInt(FirehoseSinkConnectorConfig.BATCH_SIZE_IN_BYTES_CONFIG);
 
+		int throttlingBackoffMs = config.getInt(FirehoseSinkConnectorConfig.BACKOFF_MILLIS_CONFIG);
+
+		// TODO replace with below commented-out code
 		if (client != null) {
 		    this.firehoseClient = client;
         } else {
@@ -92,10 +96,31 @@ public class FirehoseSinkTask extends SinkTask {
 			this.firehoseClient.setEndpoint("http://localstack.joelforjava.local:4573");
 		}
 
+//		if (client != null) {
+//			this.firehoseClientAdapter = new KinesisFirehoseClientAdapter(client, throttlingBackoffMs);
+//		} else {
+//			this.firehoseClientAdapter = new KinesisFirehoseClientAdapter(props);
+//		}
+
 		validateTopicToStreamsMappings(props);
 
 		validateDeliveryStreams();
 	}
+
+	/*
+	private void setupLookup(FirehoseSinkConnectorConfig config) {
+		String mappingFileUrl = config.getString(FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG);
+		log.info("Attempting to load this mapping file at {}.", FirehoseSinkConnectorConfig.MAPPING_FILE_CONFIG);
+
+		ClusterMapping clusterMapping = MappingConfigParser.parse(mappingFileUrl)
+				.orElseThrow(() -> new ConfigException("Parser could not correctly parse the mapping file: " + mappingFileUrl));
+		String cName = clusterMapping.getClusterName();
+		log.info("Using cluster name: {}", cName);
+		lookup = clusterMapping.getStreamsAsMap();
+		filters = clusterMapping.gatherStreamFilters();
+	}
+    // TODO - will replace calls above prior to `batch = config...`
+	 */
 
 	@Override
 	public void stop() {
